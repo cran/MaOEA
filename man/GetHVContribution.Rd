@@ -4,8 +4,12 @@
 \alias{GetHVContribution}
 \title{Get HV contribution of all points.}
 \usage{
-GetHVContribution(populationObjective, reference = NULL,
-  method = "exact")
+GetHVContribution(
+  populationObjective,
+  reference = NULL,
+  method = "exact",
+  ref_multiplier = 1.1
+)
 }
 \arguments{
 \item{populationObjective}{The objective value of the corresponding individual}
@@ -13,6 +17,8 @@ GetHVContribution(populationObjective, reference = NULL,
 \item{reference}{The reference point for computing HV}
 
 \item{method}{the HV computation method. Currently ignored and uses the WFG exact method.}
+
+\item{ref_multiplier}{Multiplier to the nadir point for dynamic reference point location}
 }
 \value{
 A vector of length ncol(populationObjective)
@@ -25,9 +31,14 @@ Get the hypervolume (HV) contribution of the population. Dominated front will gi
 nObjective <- 5 # the number of objectives
 nPoint <- 10 # the number of points that will form the hypervolume
 objective <- matrix(stats::runif(nObjective*nPoint), nrow = nObjective, ncol = nPoint)
+numpyready <- reticulate::py_module_available('numpy')
+pygmoready <- reticulate::py_module_available('pygmo')
+py_module_ready <- numpyready && pygmoready
+if(py_module_ready) # prevent error on testing the example
 GetHypervolume(objective,,"exact") # no reference supplied
 
 reference <- rep(2,nObjective) # create a reference point at (2,2,2,2,2)
+if(py_module_ready) # prevent error on testing the example
 GetHVContribution(objective,reference)
 }
 }

@@ -3,18 +3,18 @@ shape_linear <- function(nObj, objectiveIndex, x){
 
   for(varIndex in 1:(nObj-1)){
     if(objectiveIndex == 1){
-      multiplication <- multiplication * x[varIndex]
+      multiplication <- multiplication * x[varIndex,]
     }
 
     if((objectiveIndex < nObj) && (objectiveIndex > 1)){
       if(varIndex <= (nObj-objectiveIndex))
-        multiplication <- multiplication * x[varIndex]
+        multiplication <- multiplication * x[varIndex,]
       if(varIndex == (nObj-1))
-        multiplication <- multiplication * (1-x[nObj-objectiveIndex+1])
+        multiplication <- multiplication * (1-x[nObj-objectiveIndex+1,])
     }
 
     if(objectiveIndex == nObj){
-      multiplication <- multiplication * (1-x[1])
+      multiplication <- multiplication * (1-x[1,])
     }
   }
 
@@ -26,18 +26,18 @@ shape_convex <- function(nObj, objectiveIndex, x){
 
   for(varIndex in 1:(nObj-1)){
     if(objectiveIndex == 1){
-      multiplication <- multiplication * (1-cos(x[varIndex]*pi/2))
+      multiplication <- multiplication * (1-cos(x[varIndex,]*pi/2))
     }
 
     if((objectiveIndex < nObj) && (objectiveIndex > 1)){
       if(varIndex <= (nObj-objectiveIndex))
-        multiplication <- multiplication * (1-cos(x[varIndex]*pi/2))
+        multiplication <- multiplication * (1-cos(x[varIndex,]*pi/2))
       if(varIndex == (nObj-1))
-        multiplication <- multiplication * (1-sin(x[nObj-objectiveIndex+1]*pi/2))
+        multiplication <- multiplication * (1-sin(x[nObj-objectiveIndex+1,]*pi/2))
     }
 
     if(objectiveIndex == nObj){
-      multiplication <- multiplication * (1-sin(x[1]*pi/2))
+      multiplication <- multiplication * (1-sin(x[1,]*pi/2))
     }
   }
 
@@ -49,18 +49,18 @@ shape_concave <- function(nObj, objectiveIndex, x){
 
   for(varIndex in 1:(nObj-1)){
     if(objectiveIndex == 1){
-      multiplication <- multiplication * (sin(x[varIndex]*pi/2))
+      multiplication <- multiplication * (sin(x[varIndex,]*pi/2))
     }
 
     if((objectiveIndex < nObj) && (objectiveIndex >1)){
       if(varIndex <= (nObj-objectiveIndex))
-        multiplication <- multiplication * (sin(x[varIndex]*pi/2))
+        multiplication <- multiplication * (sin(x[varIndex,]*pi/2))
       if(varIndex == (nObj-1))
-        multiplication <- multiplication * (cos(x[nObj-objectiveIndex+1]*pi/2))
+        multiplication <- multiplication * (cos(x[nObj-objectiveIndex+1,]*pi/2))
     }
 
     if(objectiveIndex == nObj){
-      multiplication <- multiplication * (cos(x[1]*pi/2))
+      multiplication <- multiplication * (cos(x[1,]*pi/2))
       break
     }
   }
@@ -69,11 +69,11 @@ shape_concave <- function(nObj, objectiveIndex, x){
 }
 
 shape_mixed<- function(nObj, x, alpha, A){
-  obj <- (1 - x[1] - ((cos((2*A*pi*x[1])+(pi/2)))/(2*pi*A)))^alpha
+  obj <- (1 - x[1,] - ((cos((2*A*pi*x[1,])+(pi/2)))/(2*pi*A)))^alpha
 }
 
 shape_disconnected <- function(nObj, x, alpha, beta, A){
-  obj <- 1 - (x[1]^alpha) * cos(A*(x[1]^beta)*pi)*cos(A*(x[1]^beta)*pi)
+  obj <- 1 - (x[1,]^alpha) * cos(A*(x[1,]^beta)*pi)*cos(A*(x[1,]^beta)*pi)
 }
 
 b_poly <- function(y,alpha){
@@ -82,7 +82,17 @@ b_poly <- function(y,alpha){
 }
 
 b_flat <- function(y,A,B,C){
-  x <- A + min(c(0,floor(y-B))*A*(B-y)/B) + min(c(0,floor(C-y))*(1-A)*(y-C)/(1-C))
+  fun1 <- function(y1,A,B,C){
+    return( min(c(0,floor(y1-B)))*(A-(A*y1/B)))
+  }
+  fun2 <- function(y1,A,B,C){
+    return( min(c(0,floor(C-y1)))*(1-A)*(y1-C)/(1-C))
+  }
+
+  xx <- sapply(X = y,FUN = fun1,A=A,B=B,C=C)
+  yy <- sapply(X = y,FUN = fun2,A=A,B=B,C=C)
+
+  x <- A + xx - yy
   return(x)
 }
 
@@ -95,6 +105,7 @@ b_param <- function(y,secondary_y,A,B,C){
 
 s_linear <- function(y,A){
   x <- abs(y-A)/abs(floor(A-y)+A)
+  x[which(x < .Machine$double.eps)] <- 0
   return(x)
 }
 
@@ -115,21 +126,26 @@ s_multi <- function(y,A,B,C){
 }
 
 r_sum <- function(y, weight){
-  x <- sum(y*weight)/sum (weight)
+  if(is.vector(y))
+    y <- matrix(y,ncol=1)
+
+  x <- colSums(y*weight)/sum (weight)
   return(x)
 }
 
 r_nonsep <- function(y, A){
-  nVar <- length(y)
+  if(is.vector(y))
+    y <- matrix(y,ncol=1)
+  nVar <- nrow(y)
   nominator <- 0
   for(varIndex in 1:nVar){
     subsum <- 0
     for(k in 0:(A-2)){
       if((A-2) > 0){
-        subsum <- subsum + abs(y[varIndex]-y[1+((varIndex+k)%%nVar)])
+        subsum <- subsum + abs(y[varIndex,]-y[1+((varIndex+k)%%nVar),])
       }
     }
-    nominator <- nominator + y[varIndex] + subsum
+    nominator <- nominator + y[varIndex,] + subsum
   }
   denominator <- nVar/A * ceiling(A/2) * (1+ 2*A - 2*ceiling(A/2))
   x <- nominator/denominator

@@ -11,20 +11,24 @@ SMSEMOA(population, fun, nObjective, control = list(), ...)
 
 \item{fun}{Objective function being solved. Currently available in the package DTLZ1-DTLZ4, WFG4-WFG9.}
 
-\item{nObjective}{Number of objective}
+\item{nObjective}{Number of objective. Ignored as of version 0.6.1; number of row from fun is used instead.}
 
 \item{control}{(list) Options to control the SMS-EMOA:
 \code{mutationProbability} The probability of doing mutation. Should be between 0-1. Negative value will behave like a zero, and values larger than 1 will behave like 1. Default to 1
 \code{mutationDistribution} The distribution index for polynomial mutation. Larger index makes the distribution sharper around the parent.
 \code{crossoverDistribution} The distribution index for SBX. Larger index makes the distribution sharper around each parent.
-\code{referencePoint} The reference point for HV computation on normalized objective space, i.e. (1,...,1) is the nadir point. Default to (1.1, ... , 1.1).}
+\code{referencePoint} The reference point for HV computation on normalized objective space, i.e. (1,...,1) is the nadir point. If not supplied, the ref_multiplier is used instead.
+\code{ref_multiplier} In case that a reference point is not supplied, the reference is set as a multiply of the current nadir. Default to 1.1.
+\code{lbound} A vector containing the lower bound for each gene
+\code{ubound} A vector containing the upper bound for each gene
+\code{scaleinput} Whether the input should be scaled to 0-1.}
 
 \item{...}{Further arguments to be passed to \code{fun}}
 }
 \value{
 Returns a list for the next generation
 \code{population} The new generation. Column major, each row contain 1 set of objectives.
-\code{successfulOffspring} Binary, 1 if the offspring is kept in the new generation. Used in some adative schemes. Column major.
+\code{successfulOffspring} Binary, 1 if the offspring is kept in the new generation. Used in some adaptive schemes.
 \code{populationObjective} The new generation's objective values.
 }
 \description{
@@ -40,6 +44,10 @@ mutationProbability <- 1/nVar
 population <- matrix(runif(nIndividual*nVar), nrow = nVar)
 
 # run a generation of SMS-EMOA with standard WFG6 test function.
+numpyready <- reticulate::py_module_available('numpy')
+pygmoready <- reticulate::py_module_available('pygmo')
+py_module_ready <- numpyready && pygmoready
+if(py_module_ready) # prevent error on testing the example
 SMSEMOA(population,WFG6,nObjective,list(crossoverProbability = crossoverProbability,
                                           mutationProbability = mutationProbability),nObjective)
 }

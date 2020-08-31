@@ -1,7 +1,7 @@
 #' Create initial sample using Latin Hypercube Sampling (LHS) method. The variables will be ranged between 0-1
 #' @title Initialize population with Latin Hypercube Sampling
-#' @param numberOfIndividuals The number of individual in the population. Integer > 0.
-#' @param chromosomeLength The number of variables per individual
+#' @param numberOfIndividuals The number of individual in the population (ncol). Integer > 0.
+#' @param chromosomeLength The number of variables per individual (nrow)
 #' @param minVal Minimum value of the resulting sample
 #' @param maxVal Maximum value of the resulting sample
 #' @param samplingMethod Not used
@@ -18,11 +18,11 @@ InitializePopulationLHS <- function(numberOfIndividuals,chromosomeLength, minVal
 
   population<-t(population)
 
-#  if(binaryEncoding==TRUE){
-#    population<-round(population)
-#  }else{
-    population<-population * (maxVal-minVal) + minVal
-#  }
+  #  if(binaryEncoding==TRUE){
+  #    population<-round(population)
+  #  }else{
+  population<-population * (maxVal-minVal) + minVal
+  #  }
 
   return(population)
 }
@@ -66,9 +66,9 @@ EvaluatePopulation <- function(pop,fun,...){
 }
 
 #' The DTLZ1 test function.
-#' @param individual The individual to be evaluated
+#' @param individual The vector of individual (or matrix of population) to be evaluated.
 #' @param nObj The number of objective
-#' @return A matrix of size nObjective, containing the objective values.
+#' @return A matrix of size nObjective x population size, containing the objective values for each individual.
 #' @references Deb,  K.,  Thiele,  L.,  Laumanns,  M.,  Zitzler,  E.:  Scalable  Multi-Objective  Optimization Test Problems. In: Congress on Evolutionary Computation (CEC). pp. 825–830. IEEE Press, Piscataway, NJ (2002)
 #' @examples
 #' individual <- stats::runif(14)
@@ -76,33 +76,43 @@ EvaluatePopulation <- function(pop,fun,...){
 #' DTLZ1(individual,nObj)
 #' @export
 DTLZ1 <- function(individual,nObj){
-  nVar <- length(individual)
-  obj <- matrix(rep(1,nObj),nrow = nObj,ncol = 1)
-  gSigma <- 0
-  for (subIndex in nObj:nVar) {
-    gSigma <- gSigma + ((individual[subIndex] - 0.5)^2 - cos(20*pi*((individual[subIndex] - 0.5))))
-  }
-  g <- 100*(nVar- nObj + 1 + gSigma)
+  if(is.vector(individual))
+    individual <- matrix(individual)
 
-  for(objectiveIndex in 1:nObj){
-    obj[objectiveIndex] <- 0.5* (1+g)
+  popSize <- ncol(individual)
 
-    if( (nObj-objectiveIndex) > 0){
-      for(cosIndex in 1:(nObj-objectiveIndex)){
-        obj[objectiveIndex] <- obj[objectiveIndex] * individual[cosIndex]
-      }
+  nVar <- nrow(individual)
+  popObj <- NULL
+
+  #for (popIndex in 1:popSize){
+    obj <- matrix(rep(1,nObj),nrow = nObj,ncol = popSize)
+    gSigma <- 0
+    for (subIndex in nObj:nVar) {
+      gSigma <- gSigma + ((individual[subIndex,] - 0.5)^2 - cos(20*pi*((individual[subIndex,] - 0.5))))
     }
-    if(objectiveIndex > 1)
-      obj[objectiveIndex] <- obj[objectiveIndex] *  (1 - individual[nObj - objectiveIndex + 1])
-  }
+    g <- 100*(nVar- nObj + 1 + gSigma)
 
-  return(obj)
+    for(objectiveIndex in 1:nObj){
+      obj[objectiveIndex,] <- 0.5* (1+g)
+
+      if( (nObj-objectiveIndex) > 0){
+        for(cosIndex in 1:(nObj-objectiveIndex)){
+          obj[objectiveIndex,] <- obj[objectiveIndex,] * individual[cosIndex,]
+        }
+      }
+      if(objectiveIndex > 1)
+        obj[objectiveIndex,] <- obj[objectiveIndex,] *  (1 - individual[nObj - objectiveIndex + 1,])
+    }
+    popObj <- cbind(popObj,obj)
+#  }
+
+  return(popObj)
 }
 
 #' The DTLZ2 test function.
-#' @param individual The individual to be evaluated
+#' @param individual The vector of individual (or matrix of population) to be evaluated.
 #' @param nObj The number of objective
-#' @return A matrix of size nObjective, containing the objective values.
+#' @return A matrix of size nObjective x population size, containing the objective values for each individual.
 #' @references Deb,  K.,  Thiele,  L.,  Laumanns,  M.,  Zitzler,  E.:  Scalable  Multi-Objective  Optimization Test Problems. In: Congress on Evolutionary Computation (CEC). pp. 825–830. IEEE Press, Piscataway, NJ (2002)
 #' @examples
 #' individual <- stats::runif(14)
@@ -110,30 +120,40 @@ DTLZ1 <- function(individual,nObj){
 #' DTLZ2(individual,nObj)
 #' @export
 DTLZ2 <- function(individual,nObj){
-  nVar <- length(individual)
-  obj <- matrix(rep(1,nObj),nrow = nObj,ncol = 1)
-  g <- 0
-  for (subIndex in nObj:nVar) {
-    g <- g + (individual[subIndex] - 0.5)^2
-  }
-  for(objectiveIndex in 1:nObj){
-    obj[objectiveIndex] <- (1+g)
+  if(is.vector(individual))
+    individual <- matrix(individual)
 
-    if( (nObj-objectiveIndex) > 0){
-      for(cosIndex in 1:(nObj-objectiveIndex)){
-        obj[objectiveIndex] <- obj[objectiveIndex] * cos(individual[cosIndex] * pi / 2)
-      }
+  popSize <- ncol(individual)
+
+  nVar <- nrow(individual)
+  popObj <- NULL
+
+  # for (popIndex in 1:popSize){
+    obj <- matrix(rep(1,nObj),nrow = nObj,ncol = popSize)
+    g <- 0
+    for (subIndex in nObj:nVar) {
+      g <- g + (individual[subIndex,] - 0.5)^2
     }
-    if(objectiveIndex > 1)
-      obj[objectiveIndex] <- obj[objectiveIndex] *  sin(individual[nObj - objectiveIndex + 1] * pi / 2)
-  }
-  return(obj)
+    for(objectiveIndex in 1:nObj){
+      obj[objectiveIndex,] <- (1+g)
+
+      if( (nObj-objectiveIndex) > 0){
+        for(cosIndex in 1:(nObj-objectiveIndex)){
+          obj[objectiveIndex,] <- obj[objectiveIndex,] * cos(individual[cosIndex,] * pi / 2)
+        }
+      }
+      if(objectiveIndex > 1)
+        obj[objectiveIndex,] <- obj[objectiveIndex,] *  sin(individual[nObj - objectiveIndex + 1,] * pi / 2)
+    }
+    popObj <- cbind(popObj,obj)
+  # }
+  return(popObj)
 }
 
 #' The DTLZ3 test function.
-#' @param individual The individual to be evaluated
+#' @param individual The vector of individual (or matrix of population) to be evaluated.
 #' @param nObj The number of objective
-#' @return A matrix of size nObjective, containing the objective values.
+#' @return A matrix of size nObjective x population size, containing the objective values for each individual.
 #'
 #' @references Deb,  K.,  Thiele,  L.,  Laumanns,  M.,  Zitzler,  E.:  Scalable  Multi-Objective  Optimization Test Problems. In: Congress on Evolutionary Computation (CEC). pp. 825–830. IEEE Press, Piscataway, NJ (2002)
 #' @examples
@@ -142,32 +162,42 @@ DTLZ2 <- function(individual,nObj){
 #' DTLZ3(individual,nObj)
 #' @export
 DTLZ3 <- function(individual,nObj){
-  nVar <- length(individual)
-  obj <- matrix(rep(1,nObj),nrow = nObj,ncol = 1)
-  gSigma <- 0
-  for (subIndex in nObj:nVar) {
-    gSigma <- gSigma + ((individual[subIndex] - 0.5)^2 - cos(20*pi*((individual[subIndex] - 0.5))))
-  }
-  g <- 100*(nVar- nObj + 1 + gSigma)
-  for(objectiveIndex in 1:nObj){
-    obj[objectiveIndex] <- (1+g)
+  if(is.vector(individual))
+    individual <- matrix(individual)
 
-    if( (nObj-objectiveIndex) > 0){
-      for(cosIndex in 1:(nObj-objectiveIndex)){
-        obj[objectiveIndex] <- obj[objectiveIndex] * cos(individual[cosIndex] * pi / 2)
-      }
+  popSize <- ncol(individual)
+
+  nVar <- nrow(individual)
+  popObj <- NULL
+
+  #for(popIndex in 1:popSize){
+    obj <- matrix(rep(1,nObj),nrow = nObj,ncol = popSize)
+    gSigma <- 0
+    for (subIndex in nObj:nVar) {
+      gSigma <- gSigma + ((individual[subIndex,] - 0.5)^2 - cos(20*pi*((individual[subIndex,] - 0.5))))
     }
-    if(objectiveIndex > 1)
-      obj[objectiveIndex] <- obj[objectiveIndex] *  sin(individual[nObj - objectiveIndex + 1] * pi / 2)
-  }
-  return(obj)
+    g <- 100*(nVar- nObj + 1 + gSigma)
+    for(objectiveIndex in 1:nObj){
+      obj[objectiveIndex,] <- (1+g)
+
+      if( (nObj-objectiveIndex) > 0){
+        for(cosIndex in 1:(nObj-objectiveIndex)){
+          obj[objectiveIndex,] <- obj[objectiveIndex,] * cos(individual[cosIndex,] * pi / 2)
+        }
+      }
+      if(objectiveIndex > 1)
+        obj[objectiveIndex,] <- obj[objectiveIndex,] *  sin(individual[nObj - objectiveIndex + 1,] * pi / 2)
+    }
+    popObj <- cbind(popObj,obj)
+ # }
+  return(popObj)
 }
 
 #' The DTLZ4 test function.
-#' @param individual The individual to be evaluated
+#' @param individual The vector of individual (or matrix of population) to be evaluated.
 #' @param nObj The number of objective
 #' @param alpha Alpha value of DTLZ4 function.
-#' @return A matrix of size nObjective, containing the objective values.
+#' @return A matrix of size nObjective x population size, containing the objective values for each individual.
 #' @references Deb,  K.,  Thiele,  L.,  Laumanns,  M.,  Zitzler,  E.:  Scalable  Multi-Objective  Optimization Test Problems. In: Congress on Evolutionary Computation (CEC). pp. 825–830. IEEE Press, Piscataway, NJ (2002)
 #' @examples
 #' individual <- stats::runif(14)
@@ -175,24 +205,34 @@ DTLZ3 <- function(individual,nObj){
 #' DTLZ4(individual,nObj)
 #' @export
 DTLZ4 <- function(individual,nObj,alpha=100){
-  nVar <- length(individual)
-  obj <- matrix(rep(1,nObj),nrow = nObj,ncol = 1)
-  g <- 0
-  for (subIndex in nObj:nVar) {
-    g <- g + (individual[subIndex] - 0.5)^2
-  }
-  for(objectiveIndex in 1:nObj){
-    obj[objectiveIndex] <- (1+g)
+  if(is.vector(individual))
+    individual <- matrix(individual)
 
-    if( (nObj-objectiveIndex) > 0){
-      for(cosIndex in 1:(nObj-objectiveIndex)){
-        obj[objectiveIndex] <- (obj[objectiveIndex]) * cos((individual[cosIndex]^alpha) * pi / 2)
-      }
+  popSize <- ncol(individual)
+
+  nVar <- nrow(individual)
+  popObj <- NULL
+
+  #for(popIndex in 1:popSize){
+    obj <- matrix(rep(1,nObj),nrow = nObj,ncol = popSize)
+    g <- 0
+    for (subIndex in nObj:nVar) {
+      g <- g + (individual[subIndex,] - 0.5)^2
     }
-    if(objectiveIndex > 1)
-      obj[objectiveIndex] <- obj[objectiveIndex] *  sin(individual[nObj - objectiveIndex + 1] * pi / 2)
-  }
-  return(obj)
+    for(objectiveIndex in 1:nObj){
+      obj[objectiveIndex,] <- (1+g)
+
+      if( (nObj-objectiveIndex) > 0){
+        for(cosIndex in 1:(nObj-objectiveIndex)){
+          obj[objectiveIndex,] <- (obj[objectiveIndex,]) * cos((individual[cosIndex,]^alpha) * pi / 2)
+        }
+      }
+      if(objectiveIndex > 1)
+        obj[objectiveIndex,] <- obj[objectiveIndex,] *  sin(individual[nObj - objectiveIndex + 1,] * pi / 2)
+    }
+    popObj <- cbind(popObj,obj)
+  #}
+  return(popObj)
 }
 
 
@@ -221,6 +261,7 @@ DTLZ4 <- function(individual,nObj,alpha=100){
 #'
 AdaptiveNormalization <- function(objectiveValue){
   minObjVal <- matrix(,nrow = nrow(objectiveValue),ncol = 1)
+
   nObjective <- nrow(objectiveValue)
   idealPoint <- rep(Inf,nObjective)
   nadirPoint <- rep(-Inf,nObjective)
@@ -444,22 +485,32 @@ ApproximateHypervolumeContribution <- function(populationObjective,referencePoin
 #' @param reference The reference point for computing HV
 #' @param method the HV computation method
 #' @param hypervolumeMethodParam A list of parameters to be passed to the hypervolumeMethod
+#' @param ref_multiplier Multiplier to the nadir point for dynamic reference point location
 #' @return The index of the least contributor, an integer.
 #' @examples
 #' \donttest{
 #' nObjective <- 5 # the number of objectives
 #' nPoint <- 10 # the number of points that will form the hypervolume
 #' objective <- matrix(stats::runif(nObjective*nPoint), nrow = nObjective, ncol = nPoint)
+#' # run a generation of MO-CMA-ES with standard WFG8 test function.
+#' numpyready <- reticulate::py_module_available('numpy')
+#' pygmoready <- reticulate::py_module_available('pygmo')
+#' py_module_ready <- numpyready && pygmoready
+#' if(py_module_ready) # prevent error on testing the example
 #' GetHypervolume(objective,,"exact") # no reference supplied
 #'
 #' reference <- rep(2,nObjective) # create a reference point at (2,2,2,2,2)
+#' if(py_module_ready) # prevent error on testing the example
 #' GetLeastContributor(objective,reference,"exact")
 #' }
 #' @export
-GetLeastContributor<- function(populationObjective,reference=NULL,method="exact",hypervolumeMethodParam=list()){
+GetLeastContributor<- function(populationObjective,reference=NULL,method="exact",hypervolumeMethodParam=list(),ref_multiplier=1.1){
+  if(is.vector(populationObjective))
+    populationObjective <- matrix(populationObjective)
   if(is.null(reference)){
-    for(objectiveIndex in 1:nrow(populationObjective))
-      reference <- append(reference,max(populationObjective[objectiveIndex,])*1.1)
+    for(objectiveIndex in 1:nrow(populationObjective)){
+      reference <- append(reference,max(populationObjective[objectiveIndex,])*ref_multiplier)
+    }
   }
 
   if(method=="exact"){
@@ -478,23 +529,28 @@ GetLeastContributor<- function(populationObjective,reference=NULL,method="exact"
 #' @param populationObjective The objective value of the corresponding individual
 #' @param reference The reference point for computing HV
 #' @param method the HV computation method
-
+#' @param ref_multiplier Multiplier to the nadir point for dynamic reference point location
 #' @return The HV contribution value of the least contributor.
 #' @examples
 #'  \donttest{
 #' nObjective <- 5 # the number of objectives
 #' nPoint <- 10 # the number of points that will form the hypervolume
 #' objective <- matrix(stats::runif(nObjective*nPoint), nrow = nObjective, ncol = nPoint)
+#' numpyready <- reticulate::py_module_available('numpy')
+#' pygmoready <- reticulate::py_module_available('pygmo')
+#' py_module_ready <- numpyready && pygmoready
+#' if(py_module_ready) # prevent error on testing the example
 #' GetHypervolume(objective,,"exact") # no reference supplied
 #'
 #' reference <- rep(2,nObjective) # create a reference point at (2,2,2,2,2)
+#' if(py_module_ready) # prevent error on testing the example
 #' GetLeastContribution(objective,reference,"exact")
 #' }
 #' @export
-GetLeastContribution<- function(populationObjective,reference=NULL,method="exact"){
+GetLeastContribution<- function(populationObjective,reference=NULL,method="exact",ref_multiplier=1.1){
   if(method=="exact"){
     if(is.null(reference))
-      hypervolumeContribution <- HVContrib_WFG(populationObjective)
+      hypervolumeContribution <- HVContrib_WFG(populationObjective,ref_multiplier=ref_multiplier)
     else
       hypervolumeContribution <- HVContrib_WFG(populationObjective, reference)
 
@@ -512,24 +568,32 @@ GetLeastContribution<- function(populationObjective,reference=NULL,method="exact
 #' @param populationObjective The objective value of the corresponding individual
 #' @param reference The reference point for computing HV
 #' @param method the HV computation method. Currently ignored and uses the WFG exact method.
+#' @param ref_multiplier Multiplier to the nadir point for dynamic reference point location
 #' @return A vector of length ncol(populationObjective)
 #' @examples
 #' \donttest{
 #' nObjective <- 5 # the number of objectives
 #' nPoint <- 10 # the number of points that will form the hypervolume
 #' objective <- matrix(stats::runif(nObjective*nPoint), nrow = nObjective, ncol = nPoint)
+#' numpyready <- reticulate::py_module_available('numpy')
+#' pygmoready <- reticulate::py_module_available('pygmo')
+#' py_module_ready <- numpyready && pygmoready
+#' if(py_module_ready) # prevent error on testing the example
 #' GetHypervolume(objective,,"exact") # no reference supplied
 #'
 #' reference <- rep(2,nObjective) # create a reference point at (2,2,2,2,2)
+#' if(py_module_ready) # prevent error on testing the example
 #' GetHVContribution(objective,reference)
 #' }
 #' @export
-GetHVContribution<- function(populationObjective,reference=NULL,method="exact"){
+GetHVContribution<- function(populationObjective,reference=NULL,method="exact",ref_multiplier=1.1){
   #  if(method=="exact"){
+  if (!pkg.globals$have_pygmo)
+    pkg.globals$have_pygmo <- reticulate::py_module_available("pygmo")
   if (!pkg.globals$have_pygmo)
     stop("HV computation requires PyGMO")
 
-  hypervolumeContribution <- HVContrib_WFG(populationObjective, reference)
+  hypervolumeContribution <- HVContrib_WFG(populationObjective,reference,ref_multiplier=ref_multiplier)
 
   return(hypervolumeContribution)
 }
@@ -537,29 +601,36 @@ GetHVContribution<- function(populationObjective,reference=NULL,method="exact"){
 #' Compute the hypervolume formed by the points w.r.t. a reference point. If no reference is supplied, use the nadir point*(1.1,...,1.1).
 #' @title Compute hypervolume
 #' @param objective The set of points in the objective space (The objective values). A single column should contain one point, so the size would be numberOfObjective x nPoint, e.g. in 5 objective problem, it is 5 x n.
-#' @param reference The reference points. Each column represent one point. Size: numberOfObjective x nPoint, e.g. in 5 objective problem, it is 5 x n.
+#' @param reference The reference point for HV computation. A column vector.
 #' @param method Exact using WFG method or approximate HV using the method by Bringmann and Friedrich. Default to "exact".
-#'
+#' @param ref_multiplier Multiplier to the nadir point for dynamic reference point location
 #' @return Hypervolume size, a scalar value.
 #' @examples
 #' \donttest{
 #' nObjective <- 5 # the number of objectives
 #' nPoint <- 10 # the number of points that will form the hypervolume
 #' objective <- matrix(stats::runif(nObjective*nPoint), nrow = nObjective, ncol = nPoint)
+#' numpyready <- reticulate::py_module_available('numpy')
+#' pygmoready <- reticulate::py_module_available('pygmo')
+#' py_module_ready <- numpyready && pygmoready
+#' if(py_module_ready) # prevent error on testing the example
 #' GetHypervolume(objective,,"exact") # no reference supplied
 #'
 #' reference <- rep(2,nObjective) # create a reference point at (2,2,2,2,2)
+#' if(py_module_ready) # prevent error on testing the example
 #' GetHypervolume(objective,reference,"exact") # using reference point
 #' }
 #' @export
 #'
-GetHypervolume <- function(objective,reference=NULL,method="exact"){
+GetHypervolume <- function(objective,reference=NULL,method="exact",ref_multiplier=1.1){
+  if (!pkg.globals$have_pygmo)
+    pkg.globals$have_pygmo <- reticulate::py_module_available("pygmo")
   if (!pkg.globals$have_pygmo)
     stop("HV computation requires PyGMO")
 
   if(method=="exact"){
     if(is.null(reference))
-      hypervolume <- HypervolumeExact(objective)
+      hypervolume <- HypervolumeExact(objective,ref_multiplier=ref_multiplier)
     else{
       hypervolume <- HypervolumeExact(objective, reference)
     }

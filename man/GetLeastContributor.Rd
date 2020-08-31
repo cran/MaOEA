@@ -4,8 +4,13 @@
 \alias{GetLeastContributor}
 \title{Get least HV contributor}
 \usage{
-GetLeastContributor(populationObjective, reference = NULL,
-  method = "exact", hypervolumeMethodParam = list())
+GetLeastContributor(
+  populationObjective,
+  reference = NULL,
+  method = "exact",
+  hypervolumeMethodParam = list(),
+  ref_multiplier = 1.1
+)
 }
 \arguments{
 \item{populationObjective}{The objective value of the corresponding individual}
@@ -15,6 +20,8 @@ GetLeastContributor(populationObjective, reference = NULL,
 \item{method}{the HV computation method}
 
 \item{hypervolumeMethodParam}{A list of parameters to be passed to the hypervolumeMethod}
+
+\item{ref_multiplier}{Multiplier to the nadir point for dynamic reference point location}
 }
 \value{
 The index of the least contributor, an integer.
@@ -27,9 +34,15 @@ Get index of the individual with least hypervolume (HV) contribution. For the co
 nObjective <- 5 # the number of objectives
 nPoint <- 10 # the number of points that will form the hypervolume
 objective <- matrix(stats::runif(nObjective*nPoint), nrow = nObjective, ncol = nPoint)
+# run a generation of MO-CMA-ES with standard WFG8 test function.
+numpyready <- reticulate::py_module_available('numpy')
+pygmoready <- reticulate::py_module_available('pygmo')
+py_module_ready <- numpyready && pygmoready
+if(py_module_ready) # prevent error on testing the example
 GetHypervolume(objective,,"exact") # no reference supplied
 
 reference <- rep(2,nObjective) # create a reference point at (2,2,2,2,2)
+if(py_module_ready) # prevent error on testing the example
 GetLeastContributor(objective,reference,"exact")
 }
 }

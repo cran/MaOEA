@@ -23,10 +23,16 @@
 #' control <- list(successProbTarget=ps_target,crossoverProbability=crossoverProbability)
 #'
 #' # run a generation of MO-CMA-ES with standard WFG8 test function.
+#' numpyready <- reticulate::py_module_available('numpy')
+#' pygmoready <- reticulate::py_module_available('pygmo')
+#' py_module_ready <- numpyready && pygmoready
+#' if(py_module_ready) # prevent error on testing the example
 #' newGeneration <- MOCMAES(a_list,nObjective,WFG8,control,nObjective)
 #' }
 #' @export
 MOCMAES <- function( parent, nObjective, fun, control=list(), ...){
+  if (!pkg.globals$have_pygmo)
+    pkg.globals$have_pygmo <- reticulate::py_module_available("pygmo")
   if (!pkg.globals$have_pygmo)
     stop("MOCMAES requires PyGMO to compute hypervolume")
 
@@ -53,6 +59,7 @@ MOCMAES <- function( parent, nObjective, fun, control=list(), ...){
   ccov <-  2 / ( (chromosomeLength ^ 2) + 6)
   cp <- ps_target * 1 / (2 + ps_target * 1)
 
+  # object of class cmaes_gen
   a_list <- parent
 
   population<-matrix(, nrow=chromosomeLength, ncol=0);
@@ -71,6 +78,7 @@ MOCMAES <- function( parent, nObjective, fun, control=list(), ...){
   new_population <- population
   newObjectiveValue <- populationObjective
 
+  # not used in the reference
   if (stats::runif(1) < control$crossoverProbability){
     parentCount <- 0
     parent_x <- population
@@ -179,12 +187,12 @@ MOCMAES <- function( parent, nObjective, fun, control=list(), ...){
 
   #update step size and cov matrix
   for (k in 1:populationSize){
-    successfulUpdate <- max( as.integer ( newPopulationIndex==(k+populationSize) ) )
+    successfullUpdate <- max( as.integer ( newPopulationIndex==(k+populationSize) ) )
 
     # update step size 1
-    a_list[[k]] <- UpdateStepSize(a_list[[k]],successfulUpdate,cp,d,ps_target)
+    a_list[[k]] <- UpdateStepSize(a_list[[k]],successfullUpdate,cp,d,ps_target)
     # update step size 2
-    new_a_list[[k]] <- UpdateStepSize(new_a_list[[k]],successfulUpdate,cp,d,ps_target)
+    new_a_list[[k]] <- UpdateStepSize(new_a_list[[k]],successfullUpdate,cp,d,ps_target)
 
     # update cov matrix
     x_step <- (new_a_list[[k]]$x-a_list[[k]]$x) / a_list[[k]]$stepSize

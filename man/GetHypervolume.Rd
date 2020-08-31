@@ -4,14 +4,21 @@
 \alias{GetHypervolume}
 \title{Compute hypervolume}
 \usage{
-GetHypervolume(objective, reference = NULL, method = "exact")
+GetHypervolume(
+  objective,
+  reference = NULL,
+  method = "exact",
+  ref_multiplier = 1.1
+)
 }
 \arguments{
 \item{objective}{The set of points in the objective space (The objective values). A single column should contain one point, so the size would be numberOfObjective x nPoint, e.g. in 5 objective problem, it is 5 x n.}
 
-\item{reference}{The reference points. Each column represent one point. Size: numberOfObjective x nPoint, e.g. in 5 objective problem, it is 5 x n.}
+\item{reference}{The reference point for HV computation. A column vector.}
 
 \item{method}{Exact using WFG method or approximate HV using the method by Bringmann and Friedrich. Default to "exact".}
+
+\item{ref_multiplier}{Multiplier to the nadir point for dynamic reference point location}
 }
 \value{
 Hypervolume size, a scalar value.
@@ -24,9 +31,14 @@ Compute the hypervolume formed by the points w.r.t. a reference point. If no ref
 nObjective <- 5 # the number of objectives
 nPoint <- 10 # the number of points that will form the hypervolume
 objective <- matrix(stats::runif(nObjective*nPoint), nrow = nObjective, ncol = nPoint)
+numpyready <- reticulate::py_module_available('numpy')
+pygmoready <- reticulate::py_module_available('pygmo')
+py_module_ready <- numpyready && pygmoready
+if(py_module_ready) # prevent error on testing the example
 GetHypervolume(objective,,"exact") # no reference supplied
 
 reference <- rep(2,nObjective) # create a reference point at (2,2,2,2,2)
+if(py_module_ready) # prevent error on testing the example
 GetHypervolume(objective,reference,"exact") # using reference point
 }
 }

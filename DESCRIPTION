@@ -1,7 +1,7 @@
 Package: MaOEA
 Type: Package
 Title: Many Objective Evolutionary Algorithm
-Version: 0.5.2
+Version: 0.6.2
 Authors@R: c(	person("Dani", "Irawan", role = c("aut","cre"),email = "irawan_dani@yahoo.com",comment=c(ORCID='0000-0002-4213-941X')))
 Maintainer: Dani Irawan <irawan_dani@yahoo.com>
 Description: A set of evolutionary algorithms to solve many-objective optimization. 
@@ -15,14 +15,16 @@ Description: A set of evolutionary algorithms to solve many-objective optimizati
 License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 6.1.1
+BugReports: https://github.com/dots26/MaOEA/issues
+URL: https://github.com/dots26/MaOEA
+RoxygenNote: 7.1.1
 Imports: reticulate, nsga2R, lhs, nnet, stringr, randtoolbox, e1071,
-        MASS,gtools, stats, utils
+        MASS,gtools, stats, utils, pracma
 Suggests: testthat
 SystemRequirements: Python 3.x with following modules: PyGMO, NumPy,
         and cloudpickle
 NeedsCompilation: no
-Packaged: 2019-10-23 16:07:30 UTC; Dani
+Packaged: 2020-08-15 01:27:01 UTC; irawan
 Author: Dani Irawan [aut, cre] (<https://orcid.org/0000-0002-4213-941X>)
 Repository: CRAN
-Date/Publication: 2019-10-28 15:50:05 UTC
+Date/Publication: 2020-08-31 09:40:07 UTC
